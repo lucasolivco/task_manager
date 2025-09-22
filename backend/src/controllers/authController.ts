@@ -18,6 +18,7 @@ import {
   sendPasswordChangedEmail
 } from '../services/emailService'
 import prisma from '../config/database'
+import { userInfo } from 'os'
 
 // ✅ REGISTRO COM VERIFICAÇÃO COMPLETA
 // ✅ REGISTRO ATUALIZADO COM VALIDAÇÃO DE NOME ÚNICO
@@ -514,6 +515,62 @@ export const verifyResetToken = async (req: Request, res: Response) => {
         console.error('Erro ao verificar token:', error);
         res.status(500).json({
             error: 'Erro interno do servidor'
+        });
+    }
+};
+
+// ✅ NOVA: ROTA DE LOGIN PARA O HUB (VERSÃO CORRIGIDA)
+export const hubLogin = async (req: Request, res: Response) => {
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({
+                autenticado: false,
+                mensagem: 'Email e senha são obrigatórios'
+            });
+        }
+
+        // 1. A variável 'user' é declarada aqui, buscando no banco de dados.
+        const user = await prisma.user.findUnique({
+            where: { email: email.toLowerCase() }
+        });
+
+        if (!user) {
+            return res.status(401).json({
+                autenticado: false,
+                mensagem: 'Credenciais inválidas'
+            });
+        }
+
+        const isValidPassword = await comparePassword(password, user.password);
+        if (!isValidPassword) {
+            return res.status(401).json({
+                autenticado: false,
+                mensagem: 'Credenciais inválidas'
+            });
+        }
+
+        if (!user.emailVerified) {
+            return res.status(401).json({
+                autenticado: false,
+                mensagem: 'Seu email ainda não foi verificado.'
+            });
+        }
+
+        // 2. Se chegamos até aqui, 'user' existe e é válido.
+        //    Agora podemos usá-lo na resposta com segurança.
+        res.json({
+            autenticado: true,
+            mensagem: 'Login realizado com sucesso',
+            userName: user.name // Agora 'user' é reconhecido corretamente.
+        });
+
+    } catch (error) {
+        console.error('Erro no login do hub:', error);
+        res.status(500).json({
+            autenticado: false,
+            mensagem: 'Erro interno no servidor'
         });
     }
 };

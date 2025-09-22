@@ -60,7 +60,7 @@ app.use(helmet({
 // ✅ CORS SEGURO
 const allowedOrigins = isProduction 
   ? [process.env.FRONTEND_URL] // ✅ SÓ SEU DOMÍNIO EM PRODUÇÃO
-  : ['http://localhost:5173', 'http://127.0.0.1:5173'] // ✅ SÓ LOCALHOST EM DEV
+  : ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://127.0.0.1:5500'] // ✅ SÓ LOCALHOST EM DEV
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -94,7 +94,7 @@ const generalLimiter = rateLimit({
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 30, // ✅ MUITO RESTRITIVO PARA AUTH
+  max: 15, // ✅ MUITO RESTRITIVO PARA AUTH
   message: { error: 'Muitas tentativas de login. Tente novamente em 15 minutos.' },
   skipSuccessfulRequests: true
 })
@@ -128,6 +128,7 @@ const speedLimiter = slowDown({
 // ✅ APLICAR LIMITERS
 app.use('/api/auth/login', authLimiter)
 app.use('/api/auth/register', authLimiter)
+app.use('/api/auth/hub-login', authLimiter) // login hub limite requests
 app.use('/api/tasks/*path/attachments', uploadLimiter)  // ✅ *path com nome
 app.use(speedLimiter)
 app.use(generalLimiter)
