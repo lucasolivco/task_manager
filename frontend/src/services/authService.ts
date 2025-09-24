@@ -1,4 +1,4 @@
-// services/authService.ts - CORRIGIR TODAS AS ROTAS
+// services/authService.ts - ADICIONAR LIMPEZA DE ACESSO NO LOGOUT
 import api from './api';
 import type { 
   LoginForm, 
@@ -16,16 +16,15 @@ import type {
   User 
 } from '../types';
 
-// ✅ FUNÇÃO DE VERIFICAÇÃO CORRIGIDA
+// ✅ TODAS AS FUNÇÕES EXISTENTES PERMANECEM IGUAIS
 export const verifyEmail = async (token: string): Promise<VerifyEmailResponse> => {
     try {
         console.log('🔍 Verificando token:', token);
         
-        const response = await api.get(`/api/auth/verify-email?token=${encodeURIComponent(token)}`); // ✅ /api/auth/
+        const response = await api.get(`/api/auth/verify-email?token=${encodeURIComponent(token)}`);
         
         console.log('✅ Resposta da verificação:', response.data);
         
-        // Verificar se a resposta tem a estrutura esperada
         if (response.data && response.data.user) {
             return response.data;
         } else {
@@ -35,7 +34,6 @@ export const verifyEmail = async (token: string): Promise<VerifyEmailResponse> =
     } catch (error: any) {
         console.error('❌ Erro na verificação:', error);
         
-        // Log detalhado do erro
         if (error.response) {
             console.error('Response status:', error.response.status);
             console.error('Response data:', error.response.data);
@@ -45,10 +43,9 @@ export const verifyEmail = async (token: string): Promise<VerifyEmailResponse> =
     }
 };
 
-// ✅ LOGIN CORRIGIDO
 export const login = async (data: LoginForm): Promise<LoginResponse> => {
     try {
-        const response = await api.post('/api/auth/login', data); // ✅ /api/auth/login
+        const response = await api.post('/api/auth/login', data);
         return response.data;
     } catch (error) {
         console.error('Erro ao fazer login:', error);
@@ -56,10 +53,9 @@ export const login = async (data: LoginForm): Promise<LoginResponse> => {
     }
 };
 
-// ✅ REGISTER CORRIGIDO
 export const register = async (data: RegisterForm): Promise<RegisterResponse> => {
     try {
-        const response = await api.post('/api/auth/register', data); // ✅ /api/auth/register
+        const response = await api.post('/api/auth/register', data);
         return response.data;
     } catch (error) {
         console.error('Erro ao registrar usuário:', error);
@@ -67,10 +63,9 @@ export const register = async (data: RegisterForm): Promise<RegisterResponse> =>
     }
 }
 
-// ✅ RESEND EMAIL CORRIGIDO
 export const resendVerificationEmail = async (data: ResendEmailRequest): Promise<ResendEmailResponse> => {
     try {
-        const response = await api.post('/api/auth/resend-verification', data); // ✅ /api/auth/resend-verification
+        const response = await api.post('/api/auth/resend-verification', data);
         return response.data;
     } catch (error) {
         console.error('Erro ao reenviar email:', error);
@@ -78,10 +73,9 @@ export const resendVerificationEmail = async (data: ResendEmailRequest): Promise
     }
 };
 
-// ✅ GET USER CORRIGIDO
 export const getUser = async (): Promise<User> => {
     try {
-        const response = await api.get('/api/auth/me'); // ✅ /api/auth/me
+        const response = await api.get('/api/auth/me');
         return response.data;
     } catch (error) {
         console.error('Erro ao obter usuário:', error);
@@ -89,10 +83,9 @@ export const getUser = async (): Promise<User> => {
     }
 };
 
-// ✅ REQUEST PASSWORD RESET CORRIGIDO
 export const requestPasswordReset = async (data: RequestPasswordResetForm): Promise<RequestPasswordResetResponse> => {
     try {
-        const response = await api.post('/api/auth/request-password-reset', data); // ✅ /api/auth/request-password-reset
+        const response = await api.post('/api/auth/request-password-reset', data);
         return response.data;
     } catch (error) {
         console.error('Erro ao solicitar recuperação:', error);
@@ -100,10 +93,9 @@ export const requestPasswordReset = async (data: RequestPasswordResetForm): Prom
     }
 };
 
-// ✅ RESET PASSWORD CORRIGIDO
 export const resetPassword = async (data: ResetPasswordForm): Promise<ResetPasswordResponse> => {
     try {
-        const response = await api.post('/api/auth/reset-password', data); // ✅ /api/auth/reset-password
+        const response = await api.post('/api/auth/reset-password', data);
         return response.data;
     } catch (error) {
         console.error('Erro ao redefinir senha:', error);
@@ -111,10 +103,9 @@ export const resetPassword = async (data: ResetPasswordForm): Promise<ResetPassw
     }
 };
 
-// ✅ VERIFY RESET TOKEN CORRIGIDO
 export const verifyResetToken = async (token: string): Promise<VerifyResetTokenResponse> => {
     try {
-        const response = await api.get(`/api/auth/verify-reset-token?token=${encodeURIComponent(token)}`); // ✅ /api/auth/verify-reset-token
+        const response = await api.get(`/api/auth/verify-reset-token?token=${encodeURIComponent(token)}`);
         return response.data;
     } catch (error) {
         console.error('Erro ao verificar token de reset:', error);
@@ -122,16 +113,26 @@ export const verifyResetToken = async (token: string): Promise<VerifyResetTokenR
     }
 };
 
-// ✅ LOGOUT (SE EXISTIR)
+// ✅ MODIFICAR APENAS O LOGOUT PARA LIMPAR TOKEN DE ACESSO TAMBÉM
 export const logout = async (): Promise<void> => {
     try {
-        await api.post('/api/auth/logout'); // ✅ /api/auth/logout
-        localStorage.removeItem('access_token'); // ✅ Corrigido
-        localStorage.removeItem('user_data');   // ✅ Corrigido
+        await api.post('/api/auth/logout');
+        
+        // ✅ LIMPAR TOKENS DE AUTENTICAÇÃO (EXISTENTE)
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user_data');
+        
+        // ✅ NOVO: LIMPAR TOKEN DE ACESSO TAMBÉM
+        localStorage.removeItem('app_access_token');
+        localStorage.removeItem('app_environment');
+        
     } catch (error) {
         console.error('Erro ao fazer logout:', error);
+        
         // Remove do localStorage mesmo se der erro na API
-        localStorage.removeItem('access_token'); // ✅ Corrigido
-        localStorage.removeItem('user_data');   // ✅ Corrigido
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user_data');
+        localStorage.removeItem('app_access_token'); // ✅ NOVO
+        localStorage.removeItem('app_environment');  // ✅ NOVO
     }
 };

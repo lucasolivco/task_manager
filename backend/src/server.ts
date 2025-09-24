@@ -15,6 +15,8 @@ import taskRoutes from './routes/taskRoutes'
 import notificationRoutes from './routes/notificationRoutes'
 import { startNotificationScheduler } from './services/notificationService'
 import { testEmailConnection } from './services/emailService'
+import accessRoutes from './routes/accessRoutes';
+
 
 dotenv.config()
 
@@ -76,7 +78,7 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Access-Token']
 }))
 
 // ✅ RATE LIMITING SEGURO
@@ -125,10 +127,19 @@ const speedLimiter = slowDown({
   }
 })
 
+// ✅ RATE LIMITING PARA ROTAS DE ACESSO
+const accessLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 10, // Apenas 10 tentativas de código por 15min
+  message: { error: 'Muitas tentativas de código de acesso. Tente novamente em 15 minutos.' },
+  skipSuccessfulRequests: true
+})
+
 // ✅ APLICAR LIMITERS
 app.use('/api/auth/login', authLimiter)
 app.use('/api/auth/register', authLimiter)
 app.use('/api/auth/hub-login', authLimiter) // login hub limite requests
+app.use('/api/access/validate-code', accessLimiter) // ✅ NOVA LINHA
 app.use('/api/tasks/*path/attachments', uploadLimiter)  // ✅ *path com nome
 app.use(speedLimiter)
 app.use(generalLimiter)
@@ -187,6 +198,13 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
 app.use('/api/auth', authRoutes)
 app.use('/api/tasks', taskRoutes)
 app.use('/api/notifications', notificationRoutes)
+
+// ✅ LOG ESPECÍFICO PARA ROTAS DE ACESSO
+app.use('/api/access', (req, res, next) => {
+  console.log(`🔐 Access route: ${req.method} ${req.originalUrl}`)
+  console.log(`   Headers: X-Access-Token=${!!req.headers['x-access-token']}`)
+  next()
+}, accessRoutes);
 
 // ✅ ADICIONE ESTA ROTA DE TESTE AQUI
 app.get('/', (req, res) => {

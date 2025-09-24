@@ -68,21 +68,21 @@ let rateLimitExceeded = false
 let retryCount = 0
 const MAX_RETRIES = 3
 
-// ✅ REQUEST INTERCEPTOR SEGURO
+// ✅ MODIFICAR O REQUEST INTERCEPTOR EXISTENTE
 api.interceptors.request.use(
   (config) => {
-    // ✅ LOG APENAS EM DEV E SEM DADOS SENSÍVEIS
     if (import.meta.env.DEV) {
       console.log(`📡 ${config.method?.toUpperCase()} ${config.url}`)
     }
 
-    // ✅ ADICIONAR TOKEN DO HTTPONLY COOKIE (SE USANDO)
-    // Token será enviado automaticamente via cookie
-    // Não precisamos fazer nada aqui se usando httpOnly cookies
+    // ✅ ADICIONAR TOKEN DE ACESSO (NOVA FUNCIONALIDADE)
+    const accessToken = localStorage.getItem('app_access_token');
+    if (accessToken) {
+      config.headers['X-Access-Token'] = accessToken;
+    }
 
-    // ✅ FALLBACK PARA LOCALSTORAGE (MENOS SEGURO)
+    // ✅ TOKEN DE AUTENTICAÇÃO EXISTENTE (MANTER COMO ESTÁ)
     const tokenData = localStorage.getItem('access_token')
-    // O token está dentro de um objeto JSON, como vimos na sua resposta
     const token = tokenData ? JSON.parse(tokenData).value : null
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
@@ -96,29 +96,31 @@ api.interceptors.request.use(
   }
 )
 
-// ✅ RESPONSE INTERCEPTOR COM RETRY LOGIC
+
+// ✅ MODIFICAR O RESPONSE INTERCEPTOR EXISTENTE
 api.interceptors.response.use(
   (response) => {
-    // ✅ RESET RETRY COUNT ON SUCCESS
     retryCount = 0
     rateLimitExceeded = false
-
-    // ✅ LOG APENAS ERROS OU STATUS IMPORTANTES
-    if (response.status >= 400) {
-      console.warn(`⚠️ ${response.status} ${response.config.url}`)
-    }
-
     return response
   },
-  // CORREÇÃO: Lógica reescrita para ser mais explícita para o TypeScript
   async (error: AxiosError) => {
     const originalRequest: InternalAxiosRequestConfig | undefined = error.config
 
-    // Cenário 1: O erro veio com uma resposta do servidor (ex: 4xx, 5xx)
     if (error.response) {
       const { status } = error.response;
+      const responseData = error.response.data as any;
 
-      // RATE LIMITING (429)
+      // ✅ NOVO: TOKEN DE ACESSO INVÁLIDO (403 com requiresAccessCode)
+      if (status === 403 && responseData?.requiresAccessCode) {
+        console.warn('🔐 Token de acesso inválido ou expirado');
+        localStorage.removeItem('app_access_token');
+        localStorage.removeItem('app_environment');
+        window.location.reload(); // Força reload para mostrar tela de código
+        return Promise.reject(error);
+      }
+
+      // ✅ RATE LIMITING (429) - CÓDIGO EXISTENTE
       if (status === 429) {
         rateLimitExceeded = true;
         const retryAfter = error.response.headers['retry-after'];
@@ -130,30 +132,27 @@ api.interceptors.response.use(
         if (window.dispatchEvent) {
           window.dispatchEvent(new CustomEvent('rateLimitExceeded', { detail: { retryAfter } }));
         }
-        // Não tentar novamente, apenas rejeitar
         return Promise.reject(error);
       }
 
-      // TOKEN EXPIRADO (401)
+      // ✅ TOKEN DE AUTH EXPIRADO (401) - CÓDIGO EXISTENTE
       if (status === 401) {
-        console.warn('🔐 Token expirado, fazendo logout...');
+        console.warn('🔐 Token de autenticação expirado, fazendo logout...');
         localStorage.removeItem('access_token');
         localStorage.removeItem('user_data');
-	localStorage.removeItem('refresh_token');
+        localStorage.removeItem('refresh_token');
         if (window.location.pathname !== '/login') {
           window.location.href = '/login';
         }
-        // Não tentar novamente, apenas rejeitar
         return Promise.reject(error);
       }
     }
 
-    // Cenário 2: Erro de rede ou erro de servidor (5xx) que merece nova tentativa
+    // ✅ RETRY LOGIC - CÓDIGO EXISTENTE
     if (
       originalRequest &&
       !originalRequest._retry &&
       retryCount < MAX_RETRIES &&
-      // Condição: ou não houve resposta (erro de rede) ou o status foi 500+
       (!error.response || error.response.status >= 500)
     ) {
       originalRequest._retry = true;
@@ -161,16 +160,14 @@ api.interceptors.response.use(
 
       console.log(`🔄 Tentativa ${retryCount}/${MAX_RETRIES} para ${originalRequest.url}`);
 
-      // BACKOFF EXPONENCIAL
       const delay = Math.pow(2, retryCount - 1) * 1000;
       await new Promise(resolve => setTimeout(resolve, delay));
       
       return api(originalRequest);
     }
 
-    // Cenário 3: Log final para todos os outros erros
     console.error('❌ API Error:', {
-      status: error.response?.status, // Optional chaining aqui é seguro apenas para o log
+      status: error.response?.status,
       message: error.message,
       url: error.config?.url,
       method: error.config?.method,

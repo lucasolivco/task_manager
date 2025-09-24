@@ -1,10 +1,13 @@
-// App.tsx - OTIMIZADO COM VERIFICAÇÃO POR EMAIL
+// App.tsx - ADICIONAR VERIFICAÇÃO DE ACESSO
 import React from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'sonner'
 
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { useAccess } from './hooks/useAccess' // ✅ NOVO IMPORT
+import AccessCodeForm from './pages/AccessCodeForm' // ✅ NOVO IMPORT
+
 import DashboardLayout from './layouts/DashboardLayout'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -15,22 +18,19 @@ import Employees from './pages/Employees'
 import Notifications from './pages/Notifications'
 import EditTask from './pages/EditTask'
 
-// ✅ PÁGINAS DE VERIFICAÇÃO DE EMAIL
 import VerifyEmailSent from './pages/VerifyEmailSent'
 import VerifyEmail from './pages/VerifyEmail'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
+import Calendar from './pages/Calendar'
 
-import ForgotPassword from './pages/ForgotPassword'  // ✅ NOVA
-import ResetPassword from './pages/ResetPassword'   
-
-import Calendar from './pages/Calendar' // ✅ ADICIONAR IMPORT
-
-// ✅ QUERYCLIENT CORRIGIDO
+// ✅ QUERYCLIENT EXISTENTE (NÃO MODIFICAR)
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
-      staleTime: 2 * 60 * 1000, // 2 minutos
-      gcTime: 5 * 60 * 1000, // ✅ gcTime ao invés de cacheTime
+      staleTime: 2 * 60 * 1000,
+      gcTime: 5 * 60 * 1000,
       refetchOnWindowFocus: false,
       refetchOnMount: false,
       refetchOnReconnect: false,
@@ -42,7 +42,7 @@ const queryClient = new QueryClient({
   },
 })
 
-// ✅ LOADING COMPONENT REUTILIZÁVEL
+// ✅ LOADING COMPONENT EXISTENTE (NÃO MODIFICAR)
 const LoadingScreen: React.FC<{ message?: string }> = ({ message = "Carregando..." }) => (
   <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-rose-50 to-pink-50">
     <div className="text-center">
@@ -52,7 +52,7 @@ const LoadingScreen: React.FC<{ message?: string }> = ({ message = "Carregando..
   </div>
 )
 
-// ✅ PROTECTED ROUTE MELHORADO
+// ✅ TODOS OS COMPONENTES DE ROTA EXISTENTES (NÃO MODIFICAR)
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isLoading } = useAuth()
 
@@ -64,7 +64,6 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     return <Navigate to="/login" replace />
   }
 
-  // ✅ VERIFICAR SE EMAIL FOI CONFIRMADO (OPCIONAL - PARA SEGURANÇA EXTRA)
   if (user.emailVerified === false) {
     return <Navigate to="/verify-email-sent" state={{ email: user.email, name: user.name }} replace />
   }
@@ -72,7 +71,6 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return <>{children}</>
 }
 
-// ✅ PUBLIC ROUTE MELHORADO
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isLoading } = useAuth()
 
@@ -87,7 +85,6 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <>{children}</>
 }
 
-// ✅ SEMI-PROTECTED ROUTE (PARA PÁGINAS DE VERIFICAÇÃO)
 const SemiProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isLoading } = useAuth()
 
@@ -95,11 +92,9 @@ const SemiProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children 
     return <LoadingScreen />
   }
 
-  // Permite acesso mesmo sem login (para verificação de email de novos usuários)
   return <>{children}</>
 }
 
-// ✅ NOT FOUND PAGE MELHORADA
 const NotFoundPage: React.FC = () => (
   <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-rose-50 to-pink-50">
     <div className="text-center space-y-6">
@@ -127,114 +122,138 @@ const NotFoundPage: React.FC = () => (
   </div>
 )
 
+// ✅ NOVO: COMPONENTE COM CONTROLE DE ACESSO
+const AppWithAccessControl: React.FC = () => {
+  const { hasAccess, isValidating, grantAccess, environment } = useAccess();
+
+  // ✅ LOADING ENQUANTO VERIFICA ACESSO
+  if (isValidating) {
+    return <LoadingScreen message="Verificando permissões de acesso..." />;
+  }
+
+  // ✅ SE NÃO TEM ACESSO, MOSTRAR TELA DE CÓDIGO
+  if (!hasAccess) {
+    return <AccessCodeForm onAccessGranted={grantAccess} />;
+  }
+
+  // ✅ SE TEM ACESSO, MOSTRAR APP NORMAL COM INDICADOR DE AMBIENTE
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        {/* ✅ INDICADOR DE AMBIENTE (OPCIONAL) */}
+        {environment && (
+          <div className="fixed top-2 right-2 z-50 bg-rose-100 text-rose-800 px-2 py-1 rounded text-xs font-medium shadow-sm">
+            {environment}
+          </div>
+        )}
+        
+        {/* ✅ TOASTER EXISTENTE (NÃO MODIFICAR) */}
+        <Toaster 
+          position="top-right" 
+          richColors 
+          closeButton
+          theme="light"
+          duration={4000}
+          toastOptions={{
+            style: {
+              background: '#fdf2f8',
+              color: '#be185d',
+              border: '1px solid #fce7f3'
+            }
+          }}
+        />
+        
+        {/* ✅ TODAS AS ROTAS EXISTENTES (NÃO MODIFICAR) */}
+        <Routes>
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          
+          <Route 
+            path="/login" 
+            element={
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            } 
+          />
+          <Route 
+            path="/register" 
+            element={
+              <PublicRoute>
+                <Register />
+              </PublicRoute>
+            } 
+          />
+          
+          <Route 
+            path="/verify-email-sent" 
+            element={
+              <SemiProtectedRoute>
+                <VerifyEmailSent />
+              </SemiProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/verify-email" 
+            element={
+              <SemiProtectedRoute>
+                <VerifyEmail />
+              </SemiProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/forgot-password" 
+            element={
+              <SemiProtectedRoute>
+                <ForgotPassword />
+              </SemiProtectedRoute>
+            }
+          />
+          <Route 
+            path="/reset-password" 
+            element={
+              <SemiProtectedRoute>
+                <ResetPassword />
+              </SemiProtectedRoute>
+            }
+          />
+          
+          <Route 
+            path="/tasks/:id/edit" 
+            element={
+              <ProtectedRoute>
+                <EditTask />
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/" 
+            element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="tasks" element={<Tasks />} />
+            <Route path="tasks/create" element={<CreateTask />} />
+            <Route path="calendar" element={<Calendar />} />
+            <Route path="employees" element={<Employees />} />
+            <Route path="notifications" element={<Notifications />} />
+          </Route>
+          
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
+  );
+};
+
+// ✅ FUNÇÃO PRINCIPAL MODIFICADA
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <BrowserRouter>
-          {/* ✅ TOASTER OTIMIZADO */}
-          <Toaster 
-            position="top-right" 
-            richColors 
-            closeButton
-            theme="light"
-            duration={4000}
-            toastOptions={{
-              style: {
-                background: '#fdf2f8',
-                color: '#be185d',
-                border: '1px solid #fce7f3'
-              }
-            }}
-          />
-          
-          <Routes>
-            {/* ✅ REDIRECIONAMENTO PRINCIPAL */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            
-            {/* ✅ ROTAS PÚBLICAS (LOGIN/REGISTER) */}
-            <Route 
-              path="/login" 
-              element={
-                <PublicRoute>
-                  <Login />
-                </PublicRoute>
-              } 
-            />
-            <Route 
-              path="/register" 
-              element={
-                <PublicRoute>
-                  <Register />
-                </PublicRoute>
-              } 
-            />
-            
-            {/* ✅ ROTAS DE VERIFICAÇÃO DE EMAIL (SEMI-PROTEGIDAS) */}
-            <Route 
-              path="/verify-email-sent" 
-              element={
-                <SemiProtectedRoute>
-                  <VerifyEmailSent />
-                </SemiProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/verify-email" 
-              element={
-                <SemiProtectedRoute>
-                  <VerifyEmail />
-                </SemiProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/forgot-password" 
-              element={
-                <SemiProtectedRoute>
-                  <ForgotPassword />
-                </SemiProtectedRoute>
-              }
-            />
-            <Route 
-              path="/reset-password" 
-              element={
-                <SemiProtectedRoute>
-                  <ResetPassword />
-                </SemiProtectedRoute>
-              }
-            />
-            {/* ✅ ROTA ISOLADA PARA EDIÇÃO (FORA DO LAYOUT) */}
-            <Route 
-              path="/tasks/:id/edit" 
-              element={
-                <ProtectedRoute>
-                  <EditTask />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* ✅ ROTAS PROTEGIDAS COM LAYOUT */}
-            <Route 
-              path="/" 
-              element={
-                <ProtectedRoute>
-                  <DashboardLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="tasks" element={<Tasks />} />
-              <Route path="tasks/create" element={<CreateTask />} />
-              <Route path="calendar" element={<Calendar />} /> {/* ✅ NOVA ROTA */}
-              <Route path="employees" element={<Employees />} />
-              <Route path="notifications" element={<Notifications />} />
-            </Route>
-            
-            {/* ✅ PÁGINA 404 MELHORADA */}
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
+      <AppWithAccessControl />
     </QueryClientProvider>
   )
 }

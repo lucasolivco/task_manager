@@ -12,13 +12,14 @@ import {
   hubLogin        // ✅ NOVA
 } from '../controllers/authController';
 import { authenticateToken } from '../middleware/auth';
+import { requireAccessToken } from '../middleware/accessControl';
 
 // Cria um "cardápio" de rotas
 const router = Router()
 
 // ✅ ROTAS PÚBLICAS (não precisam de autenticação)
-router.post('/register', register)
-router.post('/login', login)
+router.post('/register', requireAccessToken, register)
+router.post('/login', requireAccessToken, login)
 router.post('/hub-login', hubLogin) // login hub
 router.get('/verify-email', verifyEmail)
 router.post('/resend-verification', resendVerificationEmail)
