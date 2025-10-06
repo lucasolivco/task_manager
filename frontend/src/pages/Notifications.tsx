@@ -376,20 +376,6 @@ const Notifications: React.FC = () => {
               </div>
             </div>
           </Card>
-
-          <Card className="bg-orange-50 border-orange-200">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <AlertCircle className="h-5 w-5 text-orange-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-orange-900">
-                  {Math.ceil((currentPage * ITEMS_PER_PAGE) / totalCount * 100) || 0}%
-                </p>
-                <p className="text-sm text-orange-700">Visualizadas</p>
-              </div>
-            </div>
-          </Card>
         </div>
       </div>
 

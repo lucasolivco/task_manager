@@ -1,4 +1,4 @@
-// frontend/src/components/tasks/TaskDetailsModal.tsx - VERSÃO COMPLETA
+// frontend/src/components/tasks/TaskDetailsModal.tsx - VERSÃO ATUALIZADA
 
 import React, { useEffect, useState } from 'react'
 import { 
@@ -20,7 +20,7 @@ import {
   File,
   Loader2,
   CalendarPlus,
-  Trash2 // ✅ NOVO ÍCONE
+  Trash2
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { TaskStatusLabels, TaskPriorityLabels } from '../../types'
@@ -29,7 +29,9 @@ import { getTaskComments, createComment, type Comment } from '../../services/com
 import { getTaskAttachments, uploadAttachments, downloadAttachment, deleteAttachment, type Attachment } from '../../services/attachmentService'
 import Portal from '../ui/Portal'
 import moment from 'moment-timezone'
+import { formatTaskIdForDisplay } from '../../utils/formatters' // ✅ NOVO: Importar a função
 
+// ... (interface TaskDetailsModalProps permanece a mesma)
 interface TaskDetailsModalProps {
   task: Task
   isOpen: boolean
@@ -38,6 +40,7 @@ interface TaskDetailsModalProps {
   currentUser?: { id: string; name: string; email: string }
 }
 
+
 const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
   task,
   isOpen,
@@ -45,17 +48,16 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
   userRole,
   currentUser
 }) => {
+  // ... (todos os useState e hooks permanecem os mesmos)
   const [newComment, setNewComment] = useState('')
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const [comments, setComments] = useState<Comment[]>([])
-  
-  // Loading states
   const [isLoadingComments, setIsLoadingComments] = useState(false)
   const [isLoadingAttachments, setIsLoadingAttachments] = useState(false)
   const [isSubmittingComment, setIsSubmittingComment] = useState(false)
   const [isUploadingFile, setIsUploadingFile] = useState(false)
-  const [isDeletingAttachment, setIsDeletingAttachment] = useState<string | null>(null) // ✅ NOVO
-  const [isDeletingComment, setIsDeletingComment] = useState<string | null>(null) // ✅ NOVO
+  const [isDeletingAttachment, setIsDeletingAttachment] = useState<string | null>(null)
+  const [isDeletingComment, setIsDeletingComment] = useState<string | null>(null)
 
   if (!currentUser) {
     console.warn('TaskDetailsModal: currentUser não fornecido')
@@ -80,11 +82,9 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
         onClose()
       }
     }
-
     if (isOpen) {
       document.addEventListener('keydown', handleEscape)
     }
-
     return () => {
       document.removeEventListener('keydown', handleEscape)
     }
@@ -99,6 +99,10 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
 
   if (!isOpen) return null
 
+  // ✅ NOVO: Gerar o ID de exibição
+  const displayId = formatTaskIdForDisplay(task.id);
+
+  // ... (todas as funções como loadComments, loadAttachments, etc., permanecem as mesmas)
   const loadComments = async () => {
     setIsLoadingComments(true)
     try {
@@ -177,7 +181,6 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
     }
   }
 
-  // ✅ NOVA FUNÇÃO: DELETAR ANEXO
   const handleDeleteAttachment = async (attachment: Attachment) => {
     if (!confirm(`Tem certeza que deseja excluir o arquivo "${attachment.originalName}"?`)) {
       return
@@ -198,19 +201,17 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
     }
   }
 
-  // ✅ FUNÇÃO PARA VERIFICAR PERMISSÃO DE DELETAR ANEXO
   const canDeleteAttachment = (attachment: Attachment): boolean => {
-    if (userRole === 'MANAGER') return true // Manager pode deletar qualquer anexo
-    if (attachment.uploadedBy.id === currentUser?.id) return true // Quem fez upload pode deletar
-    if (task.createdBy.id === currentUser?.id) return true // Criador da tarefa pode deletar
+    if (userRole === 'MANAGER') return true
+    if (attachment.uploadedBy.id === currentUser?.id) return true
+    if (task.createdBy.id === currentUser?.id) return true
     return false
   }
 
-  // ✅ FUNÇÃO PARA VERIFICAR PERMISSÃO DE DELETAR COMENTÁRIO
   const canDeleteComment = (comment: Comment): boolean => {
-    if (userRole === 'MANAGER') return true // Manager pode deletar qualquer comentário
-    if (comment.author.id === currentUser?.id) return true // Autor pode deletar seu comentário
-    if (task.createdBy.id === currentUser?.id) return true // Criador da tarefa pode deletar
+    if (userRole === 'MANAGER') return true
+    if (comment.author.id === currentUser?.id) return true
+    if (task.createdBy.id === currentUser?.id) return true
     return false
   }
 
@@ -285,6 +286,7 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
 
   const priorityStyles = getPriorityStyles(task.priority)
 
+
   return (
     <Portal>
       <div 
@@ -302,6 +304,11 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
             <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 min-w-0 flex-1 mr-4">
               <h2 className="text-lg md:text-2xl font-bold text-gray-900 line-clamp-2">{task.title}</h2>
               <div className="flex items-center gap-2 flex-wrap">
+                {/* ✅ NOVO: Exibindo o ID formatado */}
+                <span className="text-xs font-mono bg-gray-100 text-gray-600 px-2 py-1 rounded-md">
+                  {displayId}
+                </span>
+
                 <div className="flex items-center gap-2">
                   {getStatusIcon(task.status)}
                   <span className={`text-xs md:text-sm font-medium`}>
@@ -323,6 +330,8 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
             </button>
           </div>
 
+          {/* O restante do componente permanece exatamente o mesmo, sem alterações */}
+          {/* ... */}
           <div className="flex-1 overflow-hidden flex flex-col lg:flex-row">
             
             {/* Conteúdo principal */}
@@ -424,7 +433,7 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                   </div>
                 </div>
 
-                {/* ✅ ANEXOS COM BOTÃO DELETE */}
+                {/* ANEXOS COM BOTÃO DELETE */}
                 <div>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                     <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2">
@@ -481,7 +490,6 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                             </div>
                           </div>
                           
-                          {/* ✅ BOTÕES DE AÇÃO */}
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button 
                               onClick={() => handleDownload(attachment)}
@@ -491,7 +499,6 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                               <Download className="h-3 w-3" />
                             </button>
                             
-                            {/* ✅ BOTÃO DELETE (COM PERMISSÃO) */}
                             {canDeleteAttachment(attachment) && (
                               <button 
                                 onClick={() => handleDeleteAttachment(attachment)}
@@ -520,7 +527,7 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
               </div>
             </div>
 
-            {/* ✅ CHAT DE COMENTÁRIOS COM DELETE */}
+            {/* CHAT DE COMENTÁRIOS COM DELETE */}
             <div className="w-full lg:w-96 border-t lg:border-t-0 lg:border-l border-gray-200 flex flex-col bg-gray-50 flex-1 lg:flex-none min-h-[50vh] lg:min-h-0">
               
               <div className="p-3 border-b border-gray-200 bg-white">

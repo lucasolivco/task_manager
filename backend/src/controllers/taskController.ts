@@ -157,6 +157,7 @@ export const createTask = async (req: AuthRequest, res: Response) => {
   }
 }
 
+
 // Função para listar tarefas (cada usuário vê apenas suas tarefas)
 export const getTasks = async (req: AuthRequest, res: Response) => {
   try {

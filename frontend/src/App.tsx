@@ -140,14 +140,8 @@ const AppWithAccessControl: React.FC = () => {
   return (
     <AuthProvider>
       <BrowserRouter>
-        {/* ✅ INDICADOR DE AMBIENTE (OPCIONAL) */}
-        {environment && (
-          <div className="fixed top-2 right-2 z-50 bg-rose-100 text-rose-800 px-2 py-1 rounded text-xs font-medium shadow-sm">
-            {environment}
-          </div>
-        )}
         
-        {/* ✅ TOASTER EXISTENTE (NÃO MODIFICAR) */}
+        {/*✅ TOASTER EXISTENTE (NÃO MODIFICAR)*/}
         <Toaster 
           position="top-right" 
           richColors 

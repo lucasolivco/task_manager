@@ -1,4 +1,4 @@
-// frontend/src/components/tasks/TaskCard.tsx - CHECKBOX CORRIGIDO
+// frontend/src/components/tasks/TaskCard.tsx - VERSÃO ATUALIZADA
 
 import { 
   Calendar, 
@@ -19,7 +19,9 @@ import {
   TaskPriorityLabels
 } from '../../types'
 import type { Task } from '../../types'
+import { formatTaskIdForDisplay } from '../../utils/formatters' // ✅ NOVO: Importar a função
 
+// ... (interface TaskCardProps permanece a mesma)
 interface TaskCardProps {
   task: Task & {
     canEdit?: boolean
@@ -37,6 +39,7 @@ interface TaskCardProps {
   onToggleSelect?: (taskId: string) => void
 }
 
+
 const TaskCard = ({ 
   task, 
   onStatusChange, 
@@ -47,8 +50,11 @@ const TaskCard = ({
   isSelected,
   onToggleSelect
 }: TaskCardProps) => {
+
+  // ✅ NOVO: Gerar o ID de exibição
+  const displayId = formatTaskIdForDisplay(task.id);
   
-  // ✅ FUNÇÃO UNIVERSAL PARA FORMATAR DATAS (UTC -> Brasil)
+  // ... (todas as funções como formatDateBrazil, isDatePastBrazil, etc., permanecem as mesmas)
   const formatDateBrazil = (dateString: string | null) => {
     if (!dateString) return ''
     
@@ -61,7 +67,6 @@ const TaskCard = ({
     }
   }
 
-  // ✅ FUNÇÃO PARA VERIFICAR SE DATA PASSOU (UTC -> Brasil)
   const isDatePastBrazil = (dateString: string | null) => {
     if (!dateString) return false
     
@@ -75,7 +80,6 @@ const TaskCard = ({
     }
   }
 
-  // ✅ FUNÇÃO CORRIGIDA PARA VERIFICAR PROXIMIDADE (TAMBÉM COM MOMENT)
   const isDateNearBrazil = (dateString: string | null) => {
     if (!dateString) return false
     
@@ -91,26 +95,20 @@ const TaskCard = ({
     }
   }
 
-  // ✅ USAR AS FUNÇÕES CORRIGIDAS
   const isOverdue = task.dueDate && isDatePastBrazil(task.dueDate) && task.status !== 'COMPLETED'
   const isNearTarget = task.targetDate && isDateNearBrazil(task.targetDate) && task.status !== 'COMPLETED'
 
-  // ✅ VERIFICAR SE PODE MOSTRAR CHECKBOX
   const canShowCheckbox = () => {
-    // Para managers, sempre mostrar checkbox (para seleção múltipla)
     if (userRole === 'MANAGER' && onToggleSelect) {
       return true
     }
-    // Para outros, apenas se pode deletar
     return task.canDelete && onToggleSelect
   }
 
-  // ✅ VERIFICAR SE PODE DELETAR (PARA O BOTÃO LIXEIRA)
   const canShowDeleteButton = () => {
     return task.canDelete || (userRole === 'MANAGER' && (task.isCreator || task.canEdit))
   }
 
-  // ✅ getStatusStyles MANTIDO
   const getStatusStyles = (status: Task['status']) => {
     switch (status) {
       case 'COMPLETED': return {
@@ -136,7 +134,6 @@ const TaskCard = ({
     }
   }
 
-  // ✅ CORES DE PRIORIDADE MANTIDAS
   const getPriorityStyles = (priority: Task['priority']) => {
     switch (priority) {
       case 'URGENT': return {
@@ -162,7 +159,6 @@ const TaskCard = ({
     }
   }
 
-  // ✅ getStatusIcon MANTIDO
   const getStatusIcon = (status: Task['status']) => {
     switch (status) {
       case 'COMPLETED': return <CheckCircle2 className="h-4 w-4 text-green-600" />
@@ -175,17 +171,14 @@ const TaskCard = ({
   const statusStyles = getStatusStyles(task.status)
   const priorityStyles = getPriorityStyles(task.priority)
 
-  // ✅ HANDLE CLICK DO CARD INTEIRO
   const handleCardClick = () => {
     onViewDetails?.(task)
   }
 
-  // ✅ HANDLE PARA PREVENIR PROPAGAÇÃO EM ELEMENTOS INTERATIVOS
   const handleInteractiveClick = (e: React.MouseEvent) => {
     e.stopPropagation()
   }
 
-  // ✅ DEBUG: Log para verificar propriedades
   console.log('TaskCard Debug:', {
     taskId: task.id,
     userRole,
@@ -195,6 +188,7 @@ const TaskCard = ({
     canShowCheckbox: canShowCheckbox(),
     hasOnToggleSelect: !!onToggleSelect
   })
+
 
   return (
     <div 
@@ -208,10 +202,10 @@ const TaskCard = ({
       onClick={handleCardClick}
     >
       
-      {/* ✅ HEADER COM CHECKBOX E PRIORIDADE */}
+      {/* HEADER COM CHECKBOX E PRIORIDADE */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
-          {/* ✅ CHECKBOX CORRIGIDO - SEMPRE VISÍVEL PARA MANAGERS */}
+          {/* CHECKBOX CORRIGIDO - SEMPRE VISÍVEL PARA MANAGERS */}
           {canShowCheckbox() && (
             <div onClick={handleInteractiveClick}>
               <label className="flex items-center cursor-pointer">
@@ -237,15 +231,20 @@ const TaskCard = ({
           </div>
         </div>
         
-        {/* ✅ PRIORIDADE + BOTÃO DELETE NO HOVER */}
+        {/* PRIORIDADE + BOTÃO DELETE NO HOVER */}
         <div className="flex items-center gap-2">
+           {/* ✅ NOVO: Exibindo o ID formatado no card */}
+           <span className="text-xs font-mono bg-gray-100 text-gray-500 px-2 py-1 rounded">
+             {displayId}
+           </span>
+
           {/* Prioridade */}
           <span className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-semibold border ${priorityStyles.text}`}>
             <span className="mr-1">{priorityStyles.icon}</span>
             {TaskPriorityLabels[task.priority]}
           </span>
           
-          {/* ✅ BOTÃO DELETE CORRIGIDO */}
+          {/* BOTÃO DELETE CORRIGIDO */}
           {canShowDeleteButton() && onDelete && (
             <button
               onClick={(e) => {
@@ -261,12 +260,12 @@ const TaskCard = ({
         </div>
       </div>
 
-      {/* ✅ TÍTULO DA TAREFA - CLICÁVEL */}
+      {/* O restante do componente permanece exatamente o mesmo, sem alterações */}
+      {/* ... */}
       <h3 className="font-semibold text-gray-900 mb-3 line-clamp-2 text-base hover:text-blue-600 transition-colors">
         {task.title}
       </h3>
 
-      {/* ✅ INFORMAÇÕES COM INDICADORES DE ROLE */}
       <div className="space-y-2 mb-4 text-sm text-gray-600">
         <div className="space-y-1">
           {/* Criado por */}
@@ -294,7 +293,6 @@ const TaskCard = ({
           </div>
         </div>
 
-        {/* ✅ DATAS FORMATADAS CORRETAMENTE */}
         <div className="space-y-1">
           {/* Data de vencimento */}
           {task.dueDate && (
@@ -326,17 +324,13 @@ const TaskCard = ({
         </div>
       </div>
 
-      {/* ✅ FOOTER COM AÇÕES */}
       <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
-        {/* ✅ INDICADOR CLICÁVEL */}
         <div className="flex items-center gap-2 text-xs text-blue-600 hover:text-blue-700 transition-colors">
           <MessageCircle className="h-4 w-4" />
           <span className="font-medium">Clique para ver detalhes</span>
         </div>
         
-        {/* ✅ AÇÕES INTERATIVAS */}
         <div className="flex items-center gap-1 ml-auto" onClick={handleInteractiveClick}>
-          {/* ✅ DROPDOWN DE STATUS - APENAS PARA QUEM PODE ALTERAR STATUS */}
           {task.canChangeStatus && !task.canEdit && (
             <select
               value={task.status}
@@ -349,7 +343,6 @@ const TaskCard = ({
             </select>
           )}
           
-          {/* ✅ BOTÃO EDITAR - PARA CRIADORES */}
           {(task.canEdit || (userRole === 'MANAGER' && task.isCreator)) && (
             <button
               onClick={(e) => {
@@ -363,7 +356,6 @@ const TaskCard = ({
             </button>
           )}
           
-          {/* ✅ CASO ESPECIAL: CRIADOR QUE TAMBÉM É ATRIBUÍDO */}
           {task.canEdit && task.canChangeStatus && (
             <select
               value={task.status}
